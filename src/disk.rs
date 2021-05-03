@@ -1,4 +1,5 @@
 use std::{
+    convert::TryInto,
     fs::{File, OpenOptions},
     io::{self, Read, Seek, SeekFrom, Write},
     path::Path,
@@ -12,6 +13,15 @@ pub const PAGE_SIZE: usize = 4096;
 pub struct PageId(pub u64);
 impl PageId {
     pub const INVALID_PAGE_ID: PageId = PageId(u64::MAX);
+
+    pub fn valid(self) -> Option<PageId> {
+        if self == Self::INVALID_PAGE_ID {
+            None
+        } else {
+            Some(self)
+        }
+    }
+
     pub fn to_u64(self) -> u64 {
         self.0
     }
@@ -20,6 +30,20 @@ impl PageId {
 impl Default for PageId {
     fn default() -> Self {
         Self::INVALID_PAGE_ID
+    }
+}
+
+// From<T>: ある値からある値への変換方法を定義するtrait
+impl From<Option<PageId>> for PageId {
+    fn from(page_id: Option<PageId>) -> Self {
+        page_id.unwrap_or_default()
+    }
+}
+
+impl From<&[u8]> for PageId {
+    fn from(bytes: &[u8]) -> Self {
+        let arr = bytes.try_into().unwrap();
+        PageId(u64::from_ne_bytes(arr))
     }
 }
 
